@@ -1,3 +1,5 @@
+var allDevices = []
+
 function updateDevicePlaying(device, playing) {
   // Update what device is currently playing
 
@@ -218,6 +220,7 @@ function showDeviceDetail(device) {
 }
 
 function addDiscoveredDevice(device) {
+  allDevices.push(device)
   $('#searching').hide();
   $('#rooms-list').parent().append('<div id="'+device.UDN+'" class="room-info"><input type="image" src="/glyphicons/close.png" class="close-button"><div class="room-control"><span class="room-name">'+device.roomName+'</span><div class="volume-control"><img src="/glyphicons/volume-down.png" class="volume-down"><input type="range" class="volume-slider" min="0" max="100" value="0"><img src="/glyphicons/volume-up.png" class="volume-up"></div><input type="image" src="/glyphicons/prev.png" class="prev-button"><input type="image" src="/glyphicons/play.png" class="play-button"><input type="image" src="/glyphicons/pause.png" class="pause-button"><input type="image" src="/glyphicons/stop.png" class="stop-button"><input type="image" src="/glyphicons/next.png" class="next-button"></div><ol class="room-queue"></ol></div>');
       
@@ -305,6 +308,20 @@ chrome.runtime.onMessage.addListener(
       case 'discoveryTimeout':
         if ($('.room-info').length == 0) {
           $('#searching').html('<img src="/glyphicons/warning.png"/>Your Sonos components could not be found.');
+        }
+        break;
+      case 'pushAction':
+        console.log("pushAction received")
+        var action = request.action;
+        if (['Pause', 'Stop', 'Previous', 'Next'].indexOf(action) != -1) {
+          this.allDevices.forEach(function(device){
+            device.callServiceAction('AVTransport', action, {InstanceID:0}, function(){});
+          });
+        }
+        else if (action == 'Play') {
+          this.allDevices.forEach(function(device){
+            device.callServiceAction('AVTransport', 'Play', {InstanceID:0,'Speed':1}, function(){});
+          });
         }
         break;
     }

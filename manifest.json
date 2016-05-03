@@ -12,6 +12,9 @@
   },
 
   "permissions": [
+    "gcm",
+    "storage",
+    "notifications",
     "http://*/",
     {
       "socket": ["udp-send-to", "udp-bind", "tcp-listen", "tcp-connect"]
