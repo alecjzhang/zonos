@@ -147,6 +147,7 @@ UpnpEventListener.prototype.subscribeServiceEvent = function(device, serviceName
   );
 };
 
+// device.callServiceAction('AVTransport', action, {InstanceID:0,'Speed':1}, function(){});
 UpnpDevice.prototype.callServiceAction = function(serviceName, actionName, actionArguments, actionCallback) {
   var _this = this;
   var serviceType = this['services'][serviceName].serviceType;

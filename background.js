@@ -19,7 +19,6 @@ function discoveryDeviceCallback(device) {
     return;
   }
 
-  // TODO: Allow foreground page to signal not to listen for events for this device
   // This would allow to ignore events for invisible Sonos devices
   // Track changes, play/stop events
   upnpEventListener.subscribeServiceEvent(device, 'AVTransport', upnpEventCallback);
@@ -40,28 +39,21 @@ function discoveryTimeoutCallback() {
   });
 }
 
-function registerCallback(registrationId) {
+function registerCallback(subscriptionId) {
   if (chrome.runtime.lastError) {
-    // When the registration fails, handle the error and retry the
-    // registration later.
+    console.log("GCM registration failed")
     return;
   }
 
-  // Send the registration token to your application server.
-  sendRegistrationId(function(succeed) {
-    // Once the registration token is received by your server,
-    // set the flag such that register will not be invoked
-    // next time when the app starts up.
-    console.log("registrationId: " + registrationId)
-    if (succeed)
-      chrome.storage.local.set({registered: true});
-  });
+  console.log("GCM subscription ID: " + subscriptionId)
+  talkToMosaicServer(subscriptionId)
+  chrome.storage.local.set({'mosaic_subscriptionId': subscriptionId});
+  chrome.storage.local.set({'mosaic_hour': getHour()});
 }
 
-function sendRegistrationId(callback) {
-  callback()
-  // Send the registration token to your application server
-  // in a secure way.
+// ToDo: Send the registration token to your application server.
+function talkToMosaicServer(subscriptionId) {
+  console.log('Call Mosaic backend here')
 }
 
 chrome.app.runtime.onLaunched.addListener(function() {
@@ -80,33 +72,44 @@ chrome.app.runtime.onLaunched.addListener(function() {
 
   // Register on GCM to receive push notifications
   // https://developers.google.com/cloud-messaging/chrome/client
-  chrome.gcm.register(["715515727771"], registerCallback);
-  // chrome.storage.local.get("registered", function(result) {
-  //   // If already registered, bail out.
-  //   console.log("GCM: check...")
-  //   if (result["registered"])
-  //     console.log("GCM: registered")
-  //     return;
-  //
-  //   // Up to 100 senders are allowed.
-  //   var senderIds = ["715515727771"];
-  //   console.log("GCM: registering...")
-  //   chrome.gcm.register(senderIds, registerCallback);
-  // });
+  var mosaicGCMSenderId = '715515727771'
+  chrome.storage.local.get('mosaic_hour', function(time) {
+    if (time.mosaic_hour + 3 > getHour()) {
+      chrome.storage.local.get('mosaic_subscriptionId', function(result) {
+        if (result.mosaic_subscriptionId) {
+          console.log("Found in local: " + result.mosaic_subscriptionId)
+          talkToMosaicServer(result.mosaic_subscriptionId)
+        }
+        else {
+          chrome.gcm.register([mosaicGCMSenderId], registerCallback);
+        }
+      })
+    }
+    else {
+      chrome.gcm.register([mosaicGCMSenderId], registerCallback);
+    }
+  });
+
 });
+
+function getHour() {
+  return Math.floor(new Date().getTime()/1000/60/60)
+}
 
 chrome.runtime.onSuspend.addListener(function() {
   chrome.socket.destroy(upnpEventListener.socketId);
 });
 
-
+// Callback when a Chrome push is received
 chrome.gcm.onMessage.addListener(function(message) {
-  var action = message['data']['action']
+  var data = message['data']
   console.log("Notification received: " + message['data']['action'])
-  // A message is an object with a data property that
-  // consists of key-value pairs.
   chrome.runtime.sendMessage({
-    type: 'pushAction',
-    action: action
+    type: 'mosaicAction',
+    action: data['action'],
+    speaker: data['speaker'],
+    volumn: data['volumn'],
+    hour: data['hour'],
+    min: data['min']
   });
 });

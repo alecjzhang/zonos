@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
 
-  "name": "Zonos",
-  "description": "Simple Sonos Controller App.",
+  "name": "Mosaic Sonos App",
+  "description": "Mosaic's app to control your Sonos by Amazon Echo",
   "version": "0.1",
 
   "app": {

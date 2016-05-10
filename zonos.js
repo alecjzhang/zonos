@@ -310,23 +310,67 @@ chrome.runtime.onMessage.addListener(
           $('#searching').html('<img src="/glyphicons/warning.png"/>Your Sonos components could not be found.');
         }
         break;
-      case 'pushAction':
-        console.log("pushAction received")
-        var action = request.action;
-        if (['Pause', 'Stop', 'Previous', 'Next'].indexOf(action) != -1) {
-          this.allDevices.forEach(function(device){
-            device.callServiceAction('AVTransport', action, {InstanceID:0}, function(){});
-          });
-        }
-        else if (action == 'Play') {
-          this.allDevices.forEach(function(device){
-            device.callServiceAction('AVTransport', 'Play', {InstanceID:0,'Speed':1}, function(){});
-          });
-        }
+      case 'mosaicAction':
+        mosaicAction(request)
         break;
     }
   }
 );
+
+function mosaicAction(request) {
+  console.log('mosaicAction received: ' + request.action)
+  var speaker = request.speaker;
+  this.allDevices.forEach(function(device){
+    if (speaker) {
+      if (device.roomName == speaker) {
+        console.log('Find the right speaker: ' + speaker)
+        singleSpeakerAction(request, device);
+      }
+    }
+    else {
+      singleSpeakerAction(request, device);
+    }
+  });
+};
+
+function logAction() {
+  console.log('Mosaic action finished ')
+}
+
+function singleSpeakerAction(request, device) {
+  var action = request.action;
+  switch(action) {
+    case 'Pause':
+    case 'Stop':
+    case 'Previous':
+    case 'Next':
+      device.callServiceAction('AVTransport', action, {InstanceID:0}, logAction);
+      break;
+    case 'Play':
+      device.callServiceAction('AVTransport', action, {InstanceID:0,'Speed':1}, logAction);
+      break;
+    case 'SetVolume':
+      var volume = parseInt(request.volume);
+      device.callServiceAction('RenderingControl', action, {InstanceID:0,Channel:'Master',DesiredVolume:volume}, logAction);
+      break;
+    case 'Mute':
+      device.callServiceAction('RenderingControl', action, {InstanceID:0,Channel:'Master',DesiredVolume:0}, logAction);
+      break;
+    case 'Shuffle':
+      device.callServiceAction('AVTransport', 'SetPlayMode', {InstanceID:0,Channel:'Master',NewPlayMode:'SHUFFLE'}, logAction);
+      break;
+    case 'RepeatAll':
+      device.callServiceAction('AVTransport', 'SetPlayMode', {InstanceID:0,Channel:'Master',NewPlayMode:'REPEAT_ALL'}, logAction);
+      break;
+    case 'Sleep':
+      var hour = request.hour?request.hour:'00';
+      var min = request.min?request.min:'10';
+      var sleepTime = hour + ':' + min + ':00'
+      device.callServiceAction('AVTransport', 'ConfigureSleepTimer', {InstanceID:0,Channel:'Master',NewSleepTimerDuration: sleepTime}, logAction);
+      break;
+    default:
+  }
+}
 
 $(window).focus(
   function(event){
