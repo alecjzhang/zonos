@@ -108,7 +108,7 @@ chrome.gcm.onMessage.addListener(function(message) {
     type: 'mosaicAction',
     action: data['action'],
     speaker: data['speaker'],
-    volumn: data['volumn'],
+    volume: data['volume'],
     hour: data['hour'],
     min: data['min']
   });
