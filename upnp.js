@@ -148,7 +148,7 @@ UpnpEventListener.prototype.subscribeServiceEvent = function(device, serviceName
 };
 
 // device.callServiceAction('AVTransport', action, {InstanceID:0,'Speed':1}, function(){});
-UpnpDevice.prototype.callServiceAction = function(serviceName, actionName, actionArguments, actionCallback) {
+UpnpDevice.prototype.callServiceAction = function(serviceName, actionName, actionArguments, actionCallback, callbackUrl, subscriptionId) {
   var _this = this;
   var serviceType = this['services'][serviceName].serviceType;
   var controlURL = this['services'][serviceName].controlURL;
@@ -174,7 +174,7 @@ UpnpDevice.prototype.callServiceAction = function(serviceName, actionName, actio
           responseArguments[this.tagName] = this.textContent;
         }
       );
-      actionCallback(_this, responseArguments);
+      actionCallback(_this, responseArguments, callbackUrl, subscriptionId);
     }
   });
 };

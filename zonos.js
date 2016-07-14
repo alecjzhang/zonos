@@ -1,4 +1,5 @@
 var allDevices = []
+var registrationId;
 
 function updateDevicePlaying(device, playing) {
   // Update what device is currently playing
@@ -337,8 +338,37 @@ function logAction() {
   console.log('Mosaic action finished ')
 }
 
+function sendToMosaic(scope, response, callbackUrl, registrationId) {
+  var title = "";
+  var creator = "";
+  var album = "";
+  var data = response.TrackMetaData;
+  if (data) {
+    title = data.match('title.*title')[0].match('>.*<')[0]
+    title = title.substring(1, title.length-1)
+    creator = data.match('creator.*creator')[0].match('>.*<')[0]
+    creator = creator.substring(1, creator.length-1)
+    album = data.match('album>.*album>')[0].match('>.*<')[0]
+    album = album.substring(1, album.length-1)
+  }
+  $.ajax({
+    type: "POST", 
+    url: callbackUrl,
+    data: {title: title, creator: creator, album: album, registrationId: registrationId},
+    success: function(a){console.log(a)},
+    dataType: "json"
+  });
+}
+
 function singleSpeakerAction(request, device) {
   var action = request.action;
+  if (!registrationId) {
+    chrome.storage.local.get('mosaic_subscriptionId', function(result) {
+        if (result.mosaic_subscriptionId) {
+          registrationId = result.mosaic_subscriptionId
+        }
+    })
+  } 
   switch(action) {
     case 'Pause':
     case 'Stop':
@@ -367,6 +397,10 @@ function singleSpeakerAction(request, device) {
       var min = request.min?request.min:'10';
       var sleepTime = hour + ':' + min + ':00'
       device.callServiceAction('AVTransport', 'ConfigureSleepTimer', {InstanceID:0,Channel:'Master',NewSleepTimerDuration: sleepTime}, logAction);
+      break;
+    case 'Status':
+      var mosaicUrl = request.callbackUrl;
+      device.callServiceAction('AVTransport', 'GetPositionInfo', {InstanceID:0, Channel:'Master'}, sendToMosaic, mosaicUrl, registrationId);
       break;
     default:
   }

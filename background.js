@@ -44,7 +44,7 @@ function registerCallback(subscriptionId) {
     console.log("GCM registration failed")
     return;
   }
-
+  registrationId = subscriptionId;
   console.log("GCM subscription ID: " + subscriptionId)
   talkToMosaicServer(subscriptionId)
   chrome.storage.local.set({'mosaic_subscriptionId': subscriptionId});
@@ -110,6 +110,7 @@ chrome.gcm.onMessage.addListener(function(message) {
     speaker: data['speaker'],
     volume: data['volume'],
     hour: data['hour'],
-    min: data['min']
+    min: data['min'],
+    callbackUrl: data['callbackUrl']
   });
 });
