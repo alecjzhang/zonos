@@ -356,7 +356,7 @@ function sendToMosaic(scope, response, callbackUrl, registrationId) {
     url: callbackUrl,
     data: {title: title, creator: creator, album: album, registrationId: registrationId},
     success: function(a){console.log(a)},
-    dataType: "json"
+    dataType: "application/x-www-form-urlencoded"
   });
 }
 
